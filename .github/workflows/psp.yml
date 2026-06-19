@@ -1,0 +1,67 @@
+name: PSP templates
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/psp.yml"
+      - "core/**"
+      - "drivers/**"
+      - "main/**"
+      - "misc/scripts/build_psp.py"
+      - "modules/**"
+      - "platform/psp/**"
+      - "scene/**"
+      - "servers/**"
+      - "SConstruct"
+  push:
+    branches:
+      - psp-4.7
+    paths:
+      - ".github/workflows/psp.yml"
+      - "core/**"
+      - "drivers/**"
+      - "main/**"
+      - "misc/scripts/build_psp.py"
+      - "modules/**"
+      - "platform/psp/**"
+      - "scene/**"
+      - "servers/**"
+      - "SConstruct"
+
+jobs:
+  templates:
+    runs-on: ubuntu-latest
+    container: pspdev/pspdev:latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Install host build tools
+        run: apk add --no-cache build-base python3 py3-pip
+
+      - uses: actions/checkout@v4
+
+      - name: Install SCons
+        run: |
+          python3 -m venv /tmp/godot-build
+          /tmp/godot-build/bin/python -m pip install --disable-pip-version-check scons
+
+      - name: Install PSPGL
+        run: |
+          git clone --depth 1 https://github.com/pspdev/pspgl.git /tmp/pspgl
+          make -C /tmp/pspgl -j2 install
+
+      - name: Build debug and release templates
+        env:
+          PATH: /tmp/godot-build/bin:/usr/local/pspdev/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          PSPDEV: /usr/local/pspdev
+        run: python3 misc/scripts/build_psp.py --configuration both --jobs 2
+
+      - name: Upload PSP templates
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-4.7-psp-templates
+          if-no-files-found: error
+          path: |
+            bin/psp_debug.pbp
+            bin/psp_release.pbp

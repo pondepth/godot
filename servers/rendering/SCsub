@@ -6,5 +6,9 @@ Import("env")
 env.add_source_files(env.servers_sources, "*.cpp")
 
 SConscript("dummy/SCsub")
-SConscript("renderer_rd/SCsub")
+if env["platform"] != "psp":
+    # PSP uses its small fixed-function canvas backend. Compiling the RD
+    # renderer adds a large amount of unreachable modern GPU code and shader
+    # generation to an already memory-constrained cross build.
+    SConscript("renderer_rd/SCsub")
 SConscript("storage/SCsub")

@@ -44,6 +44,8 @@ RSE::InstanceType Utilities::get_base_type(RID p_rid) const {
 		return RSE::INSTANCE_MESH;
 	} else if (RendererDummy::MeshStorage::get_singleton()->owns_multimesh(p_rid)) {
 		return RSE::INSTANCE_MULTIMESH;
+	} else if (RendererDummy::LightStorage::get_singleton()->owns_light(p_rid)) {
+		return RSE::INSTANCE_LIGHT;
 	} else if (RendererDummy::LightStorage::get_singleton()->owns_lightmap(p_rid)) {
 		return RSE::INSTANCE_LIGHTMAP;
 	}
@@ -76,6 +78,8 @@ void Utilities::base_update_dependency(RID p_base, DependencyTracker *p_instance
 	if (RendererDummy::MeshStorage::get_singleton()->owns_mesh(p_base)) {
 		DummyMesh *mesh = RendererDummy::MeshStorage::get_singleton()->get_mesh(p_base);
 		p_instance->update_dependency(&mesh->dependency);
+	} else if (RendererDummy::LightStorage::get_singleton()->owns_light(p_base)) {
+		RendererDummy::LightStorage::get_singleton()->light_update_dependency(p_base, p_instance);
 	}
 }
 

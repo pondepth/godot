@@ -161,6 +161,7 @@ void MaterialStorage::shader_free(RID p_rid) {
 void MaterialStorage::shader_set_code(RID p_shader, const String &p_code) {
 	DummyShader *shader = shader_owner.get_or_null(p_shader);
 	ERR_FAIL_NULL(shader);
+	shader->code = p_code;
 	if (p_code.is_empty()) {
 		return;
 	}
@@ -190,6 +191,12 @@ void MaterialStorage::shader_set_code(RID p_shader, const String &p_code) {
 
 	Error err = MaterialStorage::get_singleton()->dummy_compiler.compile(new_mode, p_code, &actions, "", gen_code);
 	ERR_FAIL_COND_MSG(err != OK, "Shader compilation failed.");
+}
+
+String MaterialStorage::shader_get_code(RID p_shader) const {
+	const DummyShader *shader = shader_owner.get_or_null(p_shader);
+	ERR_FAIL_NULL_V(shader, String());
+	return shader->code;
 }
 
 void MaterialStorage::get_shader_parameter_list(RID p_shader, List<PropertyInfo> *p_param_list) const {
@@ -250,6 +257,61 @@ void MaterialStorage::material_set_shader(RID p_material, RID p_shader) {
 	ERR_FAIL_NULL(material);
 
 	material->shader = p_shader;
+}
+
+void MaterialStorage::material_set_param(RID p_material, const StringName &p_param, const Variant &p_value) {
+	DummyMaterial *material = material_owner.get_or_null(p_material);
+	ERR_FAIL_NULL(material);
+
+	if (p_value.get_type() == Variant::NIL) {
+		material->parameters.erase(p_param);
+	} else {
+		material->parameters.insert(p_param, p_value);
+	}
+}
+
+Variant MaterialStorage::material_get_param(RID p_material, const StringName &p_param) const {
+	const DummyMaterial *material = material_owner.get_or_null(p_material);
+	ERR_FAIL_NULL_V(material, Variant());
+
+	const Variant *value = material->parameters.getptr(p_param);
+	return value ? *value : Variant();
+}
+
+bool MaterialStorage::material_uses_alpha(RID p_material) const {
+	const DummyMaterial *material = material_owner.get_or_null(p_material);
+	if (!material) {
+		return false;
+	}
+	const DummyShader *shader = shader_owner.get_or_null(material->shader);
+	return shader && shader->code.find("ALPHA") >= 0;
+}
+
+bool MaterialStorage::material_is_unshaded(RID p_material) const {
+	const DummyMaterial *material = material_owner.get_or_null(p_material);
+	if (!material) {
+		return false;
+	}
+	const DummyShader *shader = shader_owner.get_or_null(material->shader);
+	return shader && shader->code.find("unshaded") >= 0;
+}
+
+RSE::CullMode MaterialStorage::material_get_cull_mode(RID p_material) const {
+	const DummyMaterial *material = material_owner.get_or_null(p_material);
+	if (!material) {
+		return RSE::CULL_MODE_BACK;
+	}
+	const DummyShader *shader = shader_owner.get_or_null(material->shader);
+	if (!shader) {
+		return RSE::CULL_MODE_BACK;
+	}
+	if (shader->code.find("cull_disabled") >= 0) {
+		return RSE::CULL_MODE_DISABLED;
+	}
+	if (shader->code.find("cull_front") >= 0) {
+		return RSE::CULL_MODE_FRONT;
+	}
+	return RSE::CULL_MODE_BACK;
 }
 
 void MaterialStorage::material_set_next_pass(RID p_material, RID p_next_material) {

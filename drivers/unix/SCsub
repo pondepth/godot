@@ -3,4 +3,17 @@ from misc.utility.scons_hints import *
 
 Import("env")
 
-env.add_source_files(env.drivers_sources, "*.cpp")
+if env["platform"] == "psp":
+    # PSP uses the POSIX filesystem and pthread shims, but has no fork/exec,
+    # syslog, dynamic loader, Unix sockets, or pipe implementation expected by
+    # the full OS_Unix backend.
+    env.add_source_files(
+        env.drivers_sources,
+        [
+            "dir_access_unix.cpp",
+            "file_access_unix.cpp",
+            "thread_posix.cpp",
+        ],
+    )
+else:
+    env.add_source_files(env.drivers_sources, "*.cpp")

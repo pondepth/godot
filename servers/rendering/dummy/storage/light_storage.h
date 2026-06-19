@@ -32,12 +32,38 @@
 
 #include "core/templates/rid_owner.h"
 #include "servers/rendering/storage/light_storage.h"
+#include "servers/rendering/storage/utilities.h"
 
 namespace RendererDummy {
 
 class LightStorage : public RendererLightStorage {
 private:
 	static LightStorage *singleton;
+
+	struct Light {
+		RSE::LightType type = RSE::LIGHT_OMNI;
+		Color color = Color(1, 1, 1);
+		float params[RSE::LIGHT_PARAM_MAX] = {};
+		uint32_t cull_mask = 0xFFFFFFFF;
+		uint32_t shadow_caster_mask = 0xFFFFFFFF;
+		RSE::LightBakeMode bake_mode = RSE::LIGHT_BAKE_DISABLED;
+		bool shadow = false;
+		bool negative = false;
+		uint64_t version = 1;
+		Dependency dependency;
+	};
+
+	struct LightInstance {
+		RID light;
+		Transform3D transform;
+		AABB aabb;
+	};
+
+	mutable RID_Owner<Light, true> light_owner;
+	mutable RID_Owner<LightInstance> light_instance_owner;
+
+	RID _light_allocate(RSE::LightType p_type);
+	void _light_initialize(RID p_rid, RSE::LightType p_type);
 	/* LIGHTMAP */
 	struct Lightmap {
 		// dummy lightmap, no data
@@ -58,31 +84,36 @@ public:
 	LightStorage();
 	virtual ~LightStorage();
 
-	bool free(RID p_rid);
+	virtual bool free(RID p_rid);
+	bool owns_light(RID p_rid) const { return light_owner.owns(p_rid); }
+	bool owns_light_instance(RID p_rid) const { return light_instance_owner.owns(p_rid); }
+	RID light_instance_get_base(RID p_light_instance) const;
+	Transform3D light_instance_get_transform(RID p_light_instance) const;
+	void light_update_dependency(RID p_light, DependencyTracker *p_instance);
 	/* Light API */
 
-	virtual RID directional_light_allocate() override { return RID(); }
-	virtual void directional_light_initialize(RID p_rid) override {}
-	virtual RID omni_light_allocate() override { return RID(); }
-	virtual void omni_light_initialize(RID p_rid) override {}
-	virtual RID spot_light_allocate() override { return RID(); }
-	virtual void spot_light_initialize(RID p_rid) override {}
-	virtual RID area_light_allocate() override { return RID(); }
-	virtual void area_light_initialize(RID p_rid) override {}
+	virtual RID directional_light_allocate() override { return _light_allocate(RSE::LIGHT_DIRECTIONAL); }
+	virtual void directional_light_initialize(RID p_rid) override { _light_initialize(p_rid, RSE::LIGHT_DIRECTIONAL); }
+	virtual RID omni_light_allocate() override { return _light_allocate(RSE::LIGHT_OMNI); }
+	virtual void omni_light_initialize(RID p_rid) override { _light_initialize(p_rid, RSE::LIGHT_OMNI); }
+	virtual RID spot_light_allocate() override { return _light_allocate(RSE::LIGHT_SPOT); }
+	virtual void spot_light_initialize(RID p_rid) override { _light_initialize(p_rid, RSE::LIGHT_SPOT); }
+	virtual RID area_light_allocate() override { return _light_allocate(RSE::LIGHT_AREA); }
+	virtual void area_light_initialize(RID p_rid) override { _light_initialize(p_rid, RSE::LIGHT_AREA); }
 
-	virtual void light_free(RID p_rid) override {}
+	virtual void light_free(RID p_rid) override;
 
-	virtual void light_set_color(RID p_light, const Color &p_color) override {}
-	virtual void light_set_param(RID p_light, RSE::LightParam p_param, float p_value) override {}
-	virtual void light_set_shadow(RID p_light, bool p_enabled) override {}
+	virtual void light_set_color(RID p_light, const Color &p_color) override;
+	virtual void light_set_param(RID p_light, RSE::LightParam p_param, float p_value) override;
+	virtual void light_set_shadow(RID p_light, bool p_enabled) override;
 	virtual void light_set_projector(RID p_light, RID p_texture) override {}
-	virtual void light_set_negative(RID p_light, bool p_enable) override {}
-	virtual void light_set_cull_mask(RID p_light, uint32_t p_mask) override {}
+	virtual void light_set_negative(RID p_light, bool p_enable) override;
+	virtual void light_set_cull_mask(RID p_light, uint32_t p_mask) override;
 	virtual void light_set_distance_fade(RID p_light, bool p_enabled, float p_begin, float p_shadow, float p_length) override {}
 	virtual void light_set_reverse_cull_face_mode(RID p_light, bool p_enabled) override {}
-	virtual void light_set_shadow_caster_mask(RID p_light, uint32_t p_caster_mask) override {}
-	virtual uint32_t light_get_shadow_caster_mask(RID p_light) const override { return 0xFFFFFFFF; }
-	virtual void light_set_bake_mode(RID p_light, RSE::LightBakeMode p_bake_mode) override {}
+	virtual void light_set_shadow_caster_mask(RID p_light, uint32_t p_caster_mask) override;
+	virtual uint32_t light_get_shadow_caster_mask(RID p_light) const override;
+	virtual void light_set_bake_mode(RID p_light, RSE::LightBakeMode p_bake_mode) override;
 	virtual void light_set_max_sdfgi_cascade(RID p_light, uint32_t p_cascade) override {}
 
 	virtual void light_omni_set_shadow_mode(RID p_light, RSE::LightOmniShadowMode p_mode) override {}
@@ -103,25 +134,25 @@ public:
 	virtual void light_area_set_texture(RID p_light, RID p_texture) override {}
 	virtual RID light_area_get_texture(RID p_light) const override { return RID(); }
 
-	virtual bool light_has_shadow(RID p_light) const override { return false; }
+	virtual bool light_has_shadow(RID p_light) const override;
 	virtual bool light_has_projector(RID p_light) const override { return false; }
 
-	virtual RSE::LightType light_get_type(RID p_light) const override { return RSE::LIGHT_OMNI; }
-	virtual AABB light_get_aabb(RID p_light) const override { return AABB(); }
-	virtual float light_get_param(RID p_light, RSE::LightParam p_param) override { return 0.0; }
-	virtual Color light_get_color(RID p_light) override { return Color(); }
+	virtual RSE::LightType light_get_type(RID p_light) const override;
+	virtual AABB light_get_aabb(RID p_light) const override;
+	virtual float light_get_param(RID p_light, RSE::LightParam p_param) override;
+	virtual Color light_get_color(RID p_light) override;
 	virtual bool light_get_reverse_cull_face_mode(RID p_light) const override { return false; }
-	virtual RSE::LightBakeMode light_get_bake_mode(RID p_light) override { return RSE::LIGHT_BAKE_DISABLED; }
+	virtual RSE::LightBakeMode light_get_bake_mode(RID p_light) override;
 	virtual uint32_t light_get_max_sdfgi_cascade(RID p_light) override { return 0; }
-	virtual uint64_t light_get_version(RID p_light) const override { return 0; }
-	virtual uint32_t light_get_cull_mask(RID p_light) const override { return 0; }
+	virtual uint64_t light_get_version(RID p_light) const override;
+	virtual uint32_t light_get_cull_mask(RID p_light) const override;
 
 	/* LIGHT INSTANCE API */
 
-	RID light_instance_create(RID p_light) override { return RID(); }
-	void light_instance_free(RID p_light) override {}
-	void light_instance_set_transform(RID p_light_instance, const Transform3D &p_transform) override {}
-	void light_instance_set_aabb(RID p_light_instance, const AABB &p_aabb) override {}
+	RID light_instance_create(RID p_light) override;
+	void light_instance_free(RID p_light_instance) override;
+	void light_instance_set_transform(RID p_light_instance, const Transform3D &p_transform) override;
+	void light_instance_set_aabb(RID p_light_instance, const AABB &p_aabb) override;
 	void light_instance_set_shadow_transform(RID p_light_instance, const Projection &p_projection, const Transform3D &p_transform, float p_far, float p_split, int p_pass, float p_shadow_texel_size, float p_bias_scale = 1.0, float p_range_begin = 0, const Vector2 &p_uv_scale = Vector2()) override {}
 	void light_instance_mark_visible(RID p_light_instance) override {}
 	virtual bool light_instance_is_shadow_visible_at_position(RID p_light_instance, const Vector3 &p_position) const override { return false; }

@@ -37,12 +37,16 @@
 #include "core/templates/list.h"
 
 #include <fcntl.h>
+#if defined(LINUXBSD_ENABLED)
 #include <sys/ioctl.h>
+#endif
 #include <sys/stat.h>
 #ifdef __linux__
 #include <sys/statfs.h>
 #endif
+#if !defined(NO_STATVFS)
 #include <sys/statvfs.h>
+#endif
 
 #include <cerrno>
 #include <cstdio>
@@ -514,12 +518,16 @@ Error DirAccessUnix::create_link(String p_source, String p_target) {
 }
 
 uint64_t DirAccessUnix::get_space_left() {
+#if defined(NO_STATVFS)
+	return 0;
+#else
 	struct statvfs vfs;
 	if (statvfs(current_dir.utf8().get_data(), &vfs) != 0) {
 		return 0;
 	}
 
 	return (uint64_t)vfs.f_bavail * (uint64_t)vfs.f_frsize;
+#endif
 }
 
 String DirAccessUnix::get_filesystem_type() const {

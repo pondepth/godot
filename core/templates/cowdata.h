@@ -43,7 +43,11 @@
 #include <sanitizer/asan_interface.h>
 #endif
 
+#ifdef PSP_ENABLED
+static_assert(std::is_trivially_destructible_v<std::atomic<uint32_t>>);
+#else
 static_assert(std::is_trivially_destructible_v<std::atomic<uint64_t>>);
+#endif
 
 // Silences false-positive warnings.
 GODOT_GCC_WARNING_PUSH
@@ -59,9 +63,15 @@ GODOT_GCC_PRAGMA(GCC diagnostic warning "-Wdangling-pointer=0") // Can't "ignore
 template <typename T>
 class CowData {
 public:
+#ifdef PSP_ENABLED
+	typedef int32_t Size;
+	typedef uint32_t USize;
+	static constexpr USize MAX_INT = INT32_MAX;
+#else
 	typedef int64_t Size;
 	typedef uint64_t USize;
 	static constexpr USize MAX_INT = INT64_MAX;
+#endif
 
 private:
 	// Alignment:  ↓ max_align_t           ↓ USize          ↓ USize            ↓ MAX_ALIGN

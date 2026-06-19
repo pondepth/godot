@@ -40,6 +40,7 @@ struct DummyMesh {
 	int blend_shape_count;
 	RSE::BlendShapeMode blend_shape_mode;
 	PackedFloat32Array blend_shape_values;
+	AABB custom_aabb;
 	Dependency dependency;
 };
 
@@ -122,8 +123,19 @@ public:
 	virtual void mesh_surface_update_skin_region(RID p_mesh, int p_surface, int p_offset, const Vector<uint8_t> &p_data) override {}
 	virtual void mesh_surface_update_index_region(RID p_mesh, int p_surface, int p_offset, const Vector<uint8_t> &p_data) override {}
 
-	virtual void mesh_surface_set_material(RID p_mesh, int p_surface, RID p_material) override {}
-	virtual RID mesh_surface_get_material(RID p_mesh, int p_surface) const override { return RID(); }
+	virtual void mesh_surface_set_material(RID p_mesh, int p_surface, RID p_material) override {
+		DummyMesh *m = mesh_owner.get_or_null(p_mesh);
+		ERR_FAIL_NULL(m);
+		ERR_FAIL_INDEX(p_surface, m->surfaces.size());
+		m->surfaces.write[p_surface].material = p_material;
+		m->dependency.changed_notify(Dependency::DEPENDENCY_CHANGED_MATERIAL);
+	}
+	virtual RID mesh_surface_get_material(RID p_mesh, int p_surface) const override {
+		DummyMesh *m = mesh_owner.get_or_null(p_mesh);
+		ERR_FAIL_NULL_V(m, RID());
+		ERR_FAIL_INDEX_V(p_surface, m->surfaces.size(), RID());
+		return m->surfaces[p_surface].material;
+	}
 
 	virtual RenderingServerTypes::SurfaceData mesh_get_surface(RID p_mesh, int p_surface) const override {
 		DummyMesh *m = mesh_owner.get_or_null(p_mesh);
@@ -139,9 +151,29 @@ public:
 		return m->surfaces.size();
 	}
 
-	virtual void mesh_set_custom_aabb(RID p_mesh, const AABB &p_aabb) override {}
-	virtual AABB mesh_get_custom_aabb(RID p_mesh) const override { return AABB(); }
-	virtual AABB mesh_get_aabb(RID p_mesh, RID p_skeleton = RID()) override { return AABB(); }
+	virtual void mesh_set_custom_aabb(RID p_mesh, const AABB &p_aabb) override {
+		DummyMesh *m = mesh_owner.get_or_null(p_mesh);
+		ERR_FAIL_NULL(m);
+		m->custom_aabb = p_aabb;
+		m->dependency.changed_notify(Dependency::DEPENDENCY_CHANGED_AABB);
+	}
+	virtual AABB mesh_get_custom_aabb(RID p_mesh) const override {
+		DummyMesh *m = mesh_owner.get_or_null(p_mesh);
+		ERR_FAIL_NULL_V(m, AABB());
+		return m->custom_aabb;
+	}
+	virtual AABB mesh_get_aabb(RID p_mesh, RID p_skeleton = RID()) override {
+		DummyMesh *m = mesh_owner.get_or_null(p_mesh);
+		ERR_FAIL_NULL_V(m, AABB());
+		if (m->custom_aabb != AABB()) {
+			return m->custom_aabb;
+		}
+		AABB result;
+		for (int i = 0; i < m->surfaces.size(); i++) {
+			result = i == 0 ? m->surfaces[i].aabb : result.merge(m->surfaces[i].aabb);
+		}
+		return result;
+	}
 
 	virtual void mesh_set_path(RID p_mesh, const String &p_path) override {}
 	virtual String mesh_get_path(RID p_mesh) const override { return String(); }

@@ -17,7 +17,7 @@ compatibility_platform_aliases = {
 }
 
 # CPU architecture options.
-architectures = ["x86_32", "x86_64", "arm32", "arm64", "rv64", "ppc64", "wasm32", "wasm64", "loongarch64"]
+architectures = ["x86_32", "x86_64", "arm32", "arm64", "mips32", "rv64", "ppc64", "wasm32", "wasm64", "loongarch64"]
 architecture_aliases = {
     "x86": "x86_32",
     "x64": "x86_64",
@@ -26,6 +26,9 @@ architecture_aliases = {
     "armv8": "arm64",
     "arm64v8": "arm64",
     "aarch64": "arm64",
+    "allegrex": "mips32",
+    "mips": "mips32",
+    "mipsel": "mips32",
     "rv": "rv64",
     "riscv": "rv64",
     "riscv64": "rv64",

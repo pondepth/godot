@@ -1,5 +1,7 @@
 # Godot Engine
 
+> This fork contains an experimental PlayStation Portable target based on Godot 4.7. See [PSP_PORT_STATUS.md](PSP_PORT_STATUS.md) before attempting a build; the PSP backend currently targets a deliberately small low-poly 2D/3D subset.
+
 <p align="center">
   <a href="https://godotengine.org">
     <img src="misc/logo/logo_outlined.svg" width="400" alt="Godot Engine logo">
