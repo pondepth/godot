@@ -58,6 +58,127 @@
 	static_assert(sizeof(SafeFlag) == sizeof(bool)); \
 	static_assert(alignof(SafeFlag) == alignof(bool));
 
+#if defined(PSP_ENABLED) && !defined(PTHREAD_ENABLED)
+
+template <typename T>
+class SafeNumeric {
+	T value;
+
+public:
+	_ALWAYS_INLINE_ void set(T p_value) {
+		value = p_value;
+	}
+
+	_ALWAYS_INLINE_ T get() const {
+		return value;
+	}
+
+	_ALWAYS_INLINE_ T increment() {
+		return ++value;
+	}
+
+	// Returns the original value instead of the new one
+	_ALWAYS_INLINE_ T postincrement() {
+		return value++;
+	}
+
+	_ALWAYS_INLINE_ T decrement() {
+		return --value;
+	}
+
+	// Returns the original value instead of the new one
+	_ALWAYS_INLINE_ T postdecrement() {
+		return value--;
+	}
+
+	_ALWAYS_INLINE_ T add(T p_value) {
+		value += p_value;
+		return value;
+	}
+
+	// Returns the original value instead of the new one
+	_ALWAYS_INLINE_ T postadd(T p_value) {
+		T original = value;
+		value += p_value;
+		return original;
+	}
+
+	_ALWAYS_INLINE_ T sub(T p_value) {
+		value -= p_value;
+		return value;
+	}
+
+	_ALWAYS_INLINE_ T bit_or(T p_value) {
+		T original = value;
+		value |= p_value;
+		return original;
+	}
+	_ALWAYS_INLINE_ T bit_and(T p_value) {
+		T original = value;
+		value &= p_value;
+		return original;
+	}
+
+	_ALWAYS_INLINE_ T bit_xor(T p_value) {
+		T original = value;
+		value ^= p_value;
+		return original;
+	}
+
+	// Returns the original value instead of the new one
+	_ALWAYS_INLINE_ T postsub(T p_value) {
+		T original = value;
+		value -= p_value;
+		return original;
+	}
+
+	_ALWAYS_INLINE_ T exchange_if_greater(T p_value) {
+		if (value >= p_value) {
+			return value;
+		}
+		value = p_value;
+		return p_value;
+	}
+
+	_ALWAYS_INLINE_ T conditional_increment() {
+		if (value == 0) {
+			return 0;
+		}
+		return ++value;
+	}
+
+	_ALWAYS_INLINE_ explicit SafeNumeric(T p_value = static_cast<T>(0)) {
+		set(p_value);
+	}
+};
+
+class SafeFlag {
+	bool flag;
+
+public:
+	_ALWAYS_INLINE_ bool is_set() const {
+		return flag;
+	}
+
+	_ALWAYS_INLINE_ void set() {
+		flag = true;
+	}
+
+	_ALWAYS_INLINE_ void clear() {
+		flag = false;
+	}
+
+	_ALWAYS_INLINE_ void set_to(bool p_value) {
+		flag = p_value;
+	}
+
+	_ALWAYS_INLINE_ explicit SafeFlag(bool p_value = false) {
+		set_to(p_value);
+	}
+};
+
+#else
+
 template <typename T>
 class SafeNumeric {
 	std::atomic<T> value;
@@ -176,6 +297,8 @@ public:
 		set_to(p_value);
 	}
 };
+
+#endif // PSP_ENABLED && !PTHREAD_ENABLED
 
 class SafeRefCount {
 	SafeNumeric<uint32_t> count;
