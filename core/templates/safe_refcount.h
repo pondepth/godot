@@ -62,7 +62,10 @@ template <typename T>
 class SafeNumeric {
 	std::atomic<T> value;
 
-	static_assert(std::atomic<T>::is_always_lock_free);
+	// Only require lock-free atomics for 32-bit and smaller types
+	// Some platforms (e.g., PSP/MIPS32) don't support lock-free 64-bit atomics
+	static_assert(sizeof(T) <= 4 || std::atomic<T>::is_always_lock_free,
+	              "SafeNumeric requires lock-free atomics or type size <= 32 bits");
 
 public:
 	_ALWAYS_INLINE_ void set(T p_value) {
