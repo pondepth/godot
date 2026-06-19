@@ -1,0 +1,1 @@
+static const GodotTypeInfo::Metadata METADATA = GodotTypeInfo::METADATA_INT_IS_UINT32;
