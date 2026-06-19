@@ -113,20 +113,20 @@ int OS_PSP::get_default_thread_pool_size() const {
 }
 
 OS::DateTime OS_PSP::get_datetime(bool p_utc) const {
-	pspTime time = {};
+	ScePspDateTime rtc_time = {};
 	if (p_utc) {
-		sceRtcGetCurrentClock(&time, 0);
+		sceRtcGetCurrentClock(&rtc_time, 0);
 	} else {
-		sceRtcGetCurrentClockLocalTime(&time);
+		sceRtcGetCurrentClockLocalTime(&rtc_time);
 	}
 	DateTime result = {};
-	result.year = time.year;
-	result.month = static_cast<Month>(time.month);
-	result.day = time.day;
+	result.year = rtc_time.year;
+	result.month = static_cast<Month>(rtc_time.month);
+	result.day = rtc_time.day;
 	result.weekday = WEEKDAY_SUNDAY;
-	result.hour = time.hour;
-	result.minute = time.minutes;
-	result.second = time.seconds;
+	result.hour = rtc_time.hour;
+	result.minute = rtc_time.minutes;
+	result.second = rtc_time.seconds;
 	result.dst = false;
 	return result;
 }
@@ -178,67 +178,3 @@ String OS_PSP::get_cwd() const {
 Error OS_PSP::execute(const String &, const List<String> &, String *, int *, bool, Mutex *, bool) {
 	return ERR_UNAVAILABLE;
 }
-
-Dictionary OS_PSP::execute_with_pipe(const String &, const List<String> &, bool) {
-	return Dictionary();
-}
-
-Error OS_PSP::create_process(const String &, const List<String> &, ProcessID *, bool) {
-	return ERR_UNAVAILABLE;
-}
-
-Error OS_PSP::kill(const ProcessID &) {
-	return ERR_UNAVAILABLE;
-}
-
-bool OS_PSP::is_process_running(const ProcessID &) const {
-	return false;
-}
-
-int OS_PSP::get_process_id() const {
-	return 1;
-}
-
-int OS_PSP::get_process_exit_code(const ProcessID &) const {
-	return -1;
-}
-
-bool OS_PSP::has_environment(const String &) const {
-	return false;
-}
-
-String OS_PSP::get_environment(const String &) const {
-	return String();
-}
-
-void OS_PSP::set_environment(const String &, const String &) const {
-}
-
-void OS_PSP::unset_environment(const String &) const {
-}
-
-void OS_PSP::alert(const String &p_alert, const String &p_title) {
-	printf("%s: %s\n", p_title.utf8().get_data(), p_alert.utf8().get_data());
-}
-
-bool OS_PSP::_check_internal_feature_support(const String &p_feature) {
-	return p_feature == "psp" || p_feature == "mips32";
-}
-
-void OS_PSP::run() {
-	if (!main_loop) {
-		return;
-	}
-
-	main_loop->initialize();
-	while (true) {
-		GodotProfileFrameMark;
-		DisplayServer::get_singleton()->process_events();
-		if (Main::iteration()) {
-			break;
-		}
-	}
-	main_loop->finalize();
-}
-
-OS_PSP::OS_PSP() = default;
