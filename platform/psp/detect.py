@@ -46,7 +46,7 @@ def get_flags():
         "target": "template_release",
         "optimize": "size",
         "lto": "none",
-        "threads": True,
+        "threads": False,
         "disable_3d": False,
         "disable_physics_3d": False,
         "disable_navigation_3d": True,
@@ -92,12 +92,12 @@ def configure(env: "SConsEnvironment"):
         CPPDEFINES=[
             "PSP_ENABLED",
             "UNIX_ENABLED",
-            "PTHREAD_ENABLED",
-            "PTHREAD_NO_RENAME",
             "UNIX_SOCKET_UNAVAILABLE",
             "NO_STATVFS",
         ]
     )
+    if env["threads"]:
+        env.Append(CPPDEFINES=["PTHREAD_ENABLED", "PTHREAD_NO_RENAME"])
     env.Append(
         CCFLAGS=[
             "-march=allegrex",
@@ -105,7 +105,6 @@ def configure(env: "SConsEnvironment"):
             "-G0",
             "-mno-gpopt",
             "-fno-exceptions",
-            "-fno-rtti",
             "-ffunction-sections",
             "-fdata-sections",
         ]
@@ -125,11 +124,12 @@ def configure(env: "SConsEnvironment"):
             "pspgu",
             "pspgum",
             "pspsdk",
-            "pthread",
             "z",
             "m",
             "c",
         ]
     )
+    if env["threads"]:
+        env.Append(LIBS=["pthread"])
 
     env.extra_suffix = ".psp" + env.extra_suffix
