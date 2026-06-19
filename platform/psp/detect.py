@@ -109,6 +109,7 @@ def configure(env: "SConsEnvironment"):
             "-fdata-sections",
         ]
     )
+    env.Append(CXXFLAGS=["-include", "platform/psp/variant_type_compat.h"])
     env.Append(LINKFLAGS=["-Wl,--gc-sections", "-L" + str(pspsdk / "lib")])
     env.Append(
         LIBS=[
