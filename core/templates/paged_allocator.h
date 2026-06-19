@@ -167,7 +167,11 @@ public:
 		bool leaked = allocs_available < pages_allocated * page_size;
 		if (leaked) {
 			if (CoreGlobals::leak_reporting_enabled) {
+#ifdef __cpp_rtti
 				ERR_PRINT(String("Pages in use exist at exit in PagedAllocator: ") + String(typeid(T).name()));
+#else
+				ERR_PRINT("Pages in use exist at exit in PagedAllocator (RTTI disabled)");
+#endif
 			}
 		} else {
 			_reset(false);
