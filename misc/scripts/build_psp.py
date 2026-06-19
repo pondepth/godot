@@ -30,6 +30,7 @@ def common_arguments(target):
         f"target={target}",
         "arch=mips32",
         "threads=no",
+        "CXXFLAGS=-include platform/psp/variant_type_compat.h",
         "modules_enabled_by_default=no",
         "module_gdscript_enabled=yes",
         "module_freetype_enabled=yes",
