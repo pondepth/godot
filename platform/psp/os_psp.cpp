@@ -125,8 +125,8 @@ OS::DateTime OS_PSP::get_datetime(bool p_utc) const {
 	result.day = rtc_time.day;
 	result.weekday = WEEKDAY_SUNDAY;
 	result.hour = rtc_time.hour;
-	result.minute = rtc_time.minutes;
-	result.second = rtc_time.seconds;
+	result.minute = rtc_time.minute;
+	result.second = rtc_time.second;
 	result.dst = false;
 	return result;
 }
