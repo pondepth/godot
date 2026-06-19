@@ -29,6 +29,7 @@ def common_arguments(target):
         "platform=psp",
         f"target={target}",
         "arch=mips32",
+        "threads=no",
         "modules_enabled_by_default=no",
         "module_gdscript_enabled=yes",
         "module_freetype_enabled=yes",
