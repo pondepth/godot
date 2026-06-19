@@ -41,6 +41,9 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      - name: Trust checkout directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Install SCons
         run: |
           python3 -m venv /tmp/godot-build
