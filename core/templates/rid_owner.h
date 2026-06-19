@@ -427,8 +427,13 @@ public:
 		}
 
 		if (alloc_count) {
+#ifdef __cpp_rtti
+			const char *type_name = typeid(T).name();
+#else
+			const char *type_name = "unknown";
+#endif
 			print_error(vformat("ERROR: %d RID allocations of type '%s' were leaked at exit.",
-					alloc_count, description ? description : typeid(T).name()));
+					alloc_count, description ? description : type_name));
 
 			for (size_t i = 0; i < max_alloc; i++) {
 				uint32_t validator = chunks[i / elements_in_chunk][i % elements_in_chunk].validator;
