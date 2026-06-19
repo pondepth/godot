@@ -65,4 +65,3 @@ jobs:
           path: |
             bin/psp_debug.pbp
             bin/psp_release.pbp
-
